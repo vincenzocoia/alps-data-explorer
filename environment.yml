@@ -292,5 +292,7 @@ dependencies:
   - zstandard=0.25.0=py313h9734d34_0
   - zstd=1.5.7=h6491c7d_2
   - pip:
+      - line-profiler==5.0.0
       - netcdf4==1.7.2
+      - py-spy==0.3.14
 prefix: /opt/homebrew/Caskroom/miniconda/base/envs/alps-data-explorer
