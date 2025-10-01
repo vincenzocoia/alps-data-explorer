@@ -52,6 +52,7 @@ dependencies:
   - cloudpickle=3.1.1=py313hca03da5_0
   - colorcet=3.1.0=pyhd8ed1ab_1
   - comm=0.2.3=pyhe01879c_0
+  - contextily=1.6.2=pyhd8ed1ab_1
   - contourpy=1.3.1=py313h48ca7d4_0
   - cpython=3.13.7=py313hd8ed1ab_100
   - cryptography=46.0.1=py313h4d9e278_3
@@ -80,6 +81,8 @@ dependencies:
   - fribidi=1.0.10=h1a28f6b_0
   - frozenlist=1.7.0=py313hf28abc0_0
   - fsspec=2025.7.0=py313h7eb115d_0
+  - geographiclib=2.0=py313hca03da5_0
+  - geopy=2.4.1=py313hca03da5_0
   - geos=3.10.6=h313beb8_0
   - geotiff=1.7.0=hcec61be_4
   - gettext=0.21.0=hbdbcc25_2
@@ -115,6 +118,7 @@ dependencies:
   - itsdangerous=2.2.0=py313hca03da5_0
   - jedi=0.19.2=pyhd8ed1ab_1
   - jinja2=3.1.6=py313hca03da5_0
+  - joblib=1.5.2=py313hca03da5_0
   - jpeg=9f=h2f69dba_0
   - json-c=0.16=h1a28f6b_0
   - jsonschema=4.25.0=py313hca03da5_0
@@ -177,6 +181,7 @@ dependencies:
   - matplotlib=3.10.6=py313hca03da5_0
   - matplotlib-base=3.10.6=py313h8596600_0
   - matplotlib-inline=0.1.7=pyhd8ed1ab_1
+  - mercantile=1.2.1=pyhd8ed1ab_1
   - minizip=4.0.3=ha89c15f_0
   - msgpack-python=1.1.1=py313h313beb8_0
   - multidict=6.6.3=py313h6347b5a_0

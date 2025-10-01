@@ -2,58 +2,27 @@
 # Import necessary libraries
 import ee
 import xarray as xr
-import xrspatial as xs
+#import xrspatial as xs
 import streamlit as st
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
+#import cartopy.crs as ccrs
 from streamlit_folium import st_folium
-from scipy.stats import norm
 import scipy.stats as stats
+from utils import nscore
+
+# Detect if running interactively (Jupyter/IPython) vs Streamlit web app
+try:
+    # Check if we're in Jupyter/IPython
+    get_ipython()
+    interactive = True
+except NameError:
+    # Not in Jupyter, assume Streamlit web app
+    interactive = False
 #st.set_page_config(layout="wide")
 st.title('Alps Data Explorer')
 col1, col2 = st.columns(2)
 
-def kendall_tau_1d(x, y):
-    """
-    Calculate the Kendall tau correlation between two 1D arrays.
-    - x: 1D array
-    - y: 1D array
-    - return: Kendall tau correlation
-    """
-    x = np.asarray(x)
-    y = np.asarray(y)
-    mask = np.isfinite(x) & np.isfinite(y)
-    if mask.sum() < 2:
-        return np.nan
-    tau, _ = stats.kendalltau(x[mask], y[mask])
-    return tau
-
-# Helper: convert data to normal scores using rank-based uniformization
-def _to_normal_scores(x, a=-0.5):
-    """
-    Convert data to normal scores using rank-based uniformization.
-    - x: 1D array
-    - a: parameter for the uniformization; -1 < a < 0 recommended.
-    - return: 1D array of normal scores
-    """
-    x = np.asarray(x, dtype=float)
-    mask = ~np.isnan(x)
-    if mask.sum() == 0:
-        return np.full_like(x, np.nan, dtype=float)
-    # Rank non-NaN values (1..n), ties averaged to mirror R's default
-    ranks = pd.Series(x[mask]).rank(method='average')
-    n = int(mask.sum())
-    # Uniform scores in (0,1) using (rank + a) / (n + 1 + 2a)
-    u = (ranks + a) / (n + 1 + 2 * a)
-    # Avoid exactly 0 or 1 to prevent +/-inf from ppf
-    eps = np.finfo(float).eps
-    u = np.clip(u.to_numpy(), eps, 1.0 - eps)
-    z = norm.ppf(u)
-    out = np.full_like(x, np.nan, dtype=float)
-    out[mask] = z
-    return out
 
 # %%
 # Initialize the Earth Engine module
@@ -111,14 +80,35 @@ ds = download_data(alps_polygon_coords)
 
 # %%
 # Streamlit selectors
-v = st.sidebar.selectbox("Select a variable", ds.data_vars)
-v2 = st.sidebar.selectbox("Select aother variable", ds.data_vars)
-choose_x = st.sidebar.select_slider("Select a x", ds.lon.values)
-choose_y = st.sidebar.select_slider("Select a y", ds.lat.values)
-agg_duration = st.sidebar.selectbox("Select an aggregation duration", ['monthly', 'yearly', 'daily'])
-agg_func = st.sidebar.selectbox("Select an aggregation function", ['max', 'min', 'mean', 'sum'])
-scale = st.sidebar.radio("Scale", ['Linear', 'Normal Scores'])
-submit_button = st.sidebar.button(label='Refresh')
+# If interactive, we can use the following selectors, else use defaults.
+
+
+if interactive:
+    v = 'snowmelt'
+    v2 = 'surface_runoff_hourly'
+    choose_x = ds.lon.values[0]
+    choose_y = ds.lat.values[0]
+    agg_duration = 'monthly'
+    agg_func = 'mean'
+    scale = 'Linear'
+    submit_button = True
+else:
+    v = st.sidebar.selectbox("Select a variable", ds.data_vars)
+    v2 = st.sidebar.selectbox("Select another variable", ds.data_vars)
+    choose_x = st.sidebar.select_slider("Select a x", ds.lon.values)
+    choose_y = st.sidebar.select_slider("Select a y", ds.lat.values)
+    agg_duration = st.sidebar.selectbox(
+        "Select an aggregation duration", 
+        ['monthly', 'yearly', 'daily']
+    )
+    agg_func = st.sidebar.selectbox(
+        "Select an aggregation function",
+        ['max', 'min', 'mean', 'sum']
+    )
+    scale = st.sidebar.radio("Scale", ['Linear', 'Normal Scores'])
+    submit_button = st.sidebar.button(label='Refresh')
+
+
 
 # %%
 if submit_button:
@@ -140,8 +130,8 @@ if submit_button:
     
     # Apply normal scores only if requested
     if scale == 'Normal Scores':
-        x_plot = _to_normal_scores(v_data)
-        y_plot = _to_normal_scores(v2_data)
+        x_plot = nscore(v_data)
+        y_plot = nscore(v2_data)
     else:
         x_plot = v_data
         y_plot = v2_data
@@ -150,8 +140,14 @@ if submit_button:
     da1 = ds[v]
     da2 = ds[v2]
     
+    # Use scipy.stats.kendalltau directly with xarray
+    # We need a wrapper to return only the tau value (not p-value)
+    def kendall_tau_only(x, y):
+        tau, _ = stats.kendalltau(x, y)
+        return tau
+    
     tau = xr.apply_ufunc(
-        kendall_tau_1d,
+        kendall_tau_only,
         da1, da2,
         input_core_dims=[['time'], ['time']],
         output_core_dims=[[]],

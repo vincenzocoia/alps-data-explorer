@@ -22,7 +22,7 @@ DEFAULT_CONFIG = {
         [44.956, 5.120],
         [43.543, 6.744]
     ],
-    'date_range': ('1992-10-05', '1993-03-31'),
+    'date_range': ('1993-01-01', '2024-12-31'),
     'ee_project': 'alps-data-explorer'
 }
 
