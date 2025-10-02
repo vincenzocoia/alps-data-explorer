@@ -42,21 +42,75 @@ def plot_alps_polygon(polygon_coords: list) -> folium.Map:
     return m
 
 # %%
-def download_era5_data(polygon_coords: list, date_range: Tuple[str, str]) -> xr.Dataset:
+def download_era5_data(polygon_coords: list, 
+                      date_range: Tuple[str, str],
+                      agg_duration: str = None,
+                      agg_func: str = None,
+                      variables: list = None) -> xr.Dataset:
     """
-    Download ERA5 data for given polygon and date range
+    Download ERA5 data for given polygon and date range with optional aggregation
+    
+    Parameters
+    ----------
+    polygon_coords : list
+        List of coordinate pairs defining the polygon
+    date_range : Tuple[str, str]
+        Start and end dates for data collection
+    agg_duration : str, optional
+        Aggregation duration ('daily', 'monthly', 'annual'), by default `None`.
+    agg_func : str, optional
+        Aggregation function ('mean', 'max', 'min', 'sum'), by default `None`.
+    variables : list, optional
+        List of specific variables to download, by default None (all variables)
+    
+    Returns
+    -------
+    xr.Dataset
+        Dataset with optional aggregation applied
     """
     
+    # Initialize Earth Engine collection
     ic = ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY').filterDate(*date_range)
-    leg1 = ee.Geometry.Polygon(polygon_coords)
     
+    # Select specific variables if provided
+    if variables:
+        ic = ic.select(variables)
+    
+    # Apply aggregation in Earth Engine if specified
+    if agg_duration:
+        # Map duration to Earth Engine frequency
+        duration_mapping = {
+            'daily': 'day',
+            'monthly': 'month', 
+            'annual': 'year'
+        }
+        
+        if not agg_func:
+            raise ValueError("agg_func must be provided if agg_duration is provided.")
+        
+        if agg_duration in duration_mapping:
+            # Apply Earth Engine aggregation
+            ic = ic.aggregate_time(
+                frequency=duration_mapping[agg_duration],
+                reducer=getattr(ee.Reducer, agg_func)()
+            )
+    
+    # Create geometry
+    geometry = ee.Geometry.Polygon(polygon_coords)
+    
+    # Download data using xee
     ds = xr.open_dataset(
         ic,
         projection=ic.first().select(0).projection(),
-        geometry=leg1
+        geometry=geometry
     )
-    # Indicate that no aggregation has been applied (as metadata)
-    ds.attrs['transformation'] = None
+    
+    # Add metadata about transformations
+    if agg_duration:
+        ds.attrs['transformation'] = f'{agg_duration}_{agg_func}'
+    else:
+        ds.attrs['transformation'] = None
+    
     return ds
 
 # %%

@@ -62,21 +62,32 @@ with col1:
 # %%
 # Download some ERA5 data
 @st.cache_data
-def download_data(polygon_coords):
-    ic = ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY').filterDate(
-        '1992-10-05', '1993-03-31'
-    )
-    leg1 = ee.Geometry.Polygon(polygon_coords)
-    ds = xr.open_dataset(
-        ic,
-        #engine='netcdf4',
-        projection=ic.first().select(0).projection(),
-        geometry=leg1
-    )
-    return ds
+def download_data(polygon_coords, date_range=('1992-10-05', '1993-03-31'), 
+                  agg_duration='none', agg_func='mean', variables=None):
+    """
+    Download ERA5 data with optional aggregation using xee
+    
+    Parameters
+    ----------
+    polygon_coords : list
+        List of coordinate pairs defining the polygon
+    date_range : tuple, optional
+        Start and end dates for data collection, by default ('1992-10-05', '1993-03-31')
+    agg_duration : str, optional
+        Aggregation duration ('daily', 'monthly', 'yearly', 'none'), by default 'none'
+    agg_func : str, optional
+        Aggregation function ('mean', 'max', 'min', 'sum'), by default 'mean'
+    variables : list, optional
+        List of specific variables to download, by default None (all variables)
+    """
+    from core import download_era5_data
+    return download_era5_data(polygon_coords, date_range, agg_duration, agg_func, variables)
 
 # Use the cached function to get the dataset
-ds = download_data(alps_polygon_coords)
+ds = download_data(alps_polygon_coords, 
+                   date_range=('1992-10-05', '1993-03-31'),
+                   agg_duration='none', 
+                   agg_func='mean')
 
 # %%
 # Streamlit selectors
