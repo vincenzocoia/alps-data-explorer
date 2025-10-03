@@ -68,7 +68,6 @@ def download_era5_data(polygon_coords: list,
     xr.Dataset
         Dataset with optional aggregation applied
     """
-    
     # Initialize Earth Engine collection
     ic = ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY').filterDate(*date_range)
     

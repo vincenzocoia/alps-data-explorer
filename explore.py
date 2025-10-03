@@ -25,7 +25,13 @@ date_range
 
 # %%
 # Download ERA5 data
-ds = core.download_era5_data(alps, date_range=date_range)
+ds = core.download_era5_data(
+  alps, 
+  date_range=date_range,
+  agg_duration="annual",
+  agg_func="max",
+  variables=["total_precipitation_hourly", "surface_runoff_hourly"]
+)
 print(f"✅ Data downloaded: {list(ds.data_vars)}")
 print(f"Time range: {ds.time.values[0]} to {ds.time.values[-1]}")
 print(f"Spatial extent: {ds.lon.values.min():.2f} to {ds.lon.values.max():.2f} lon, {ds.lat.values.min():.2f} to {ds.lat.values.max():.2f} lat")
